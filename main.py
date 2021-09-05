@@ -8,7 +8,7 @@ gpio.setwarnings(False)
 
 
 ## ------------------------------------------------------------------------
-## BINARY HELPERS
+## CORE - BINARY
 
 def hexp(v):
     padding = 8
@@ -24,6 +24,24 @@ def is_bit_on(v, index):
 ### NB: on my specific variant of the 74HC595, Q pin indexes are all reversed...
 def normalize_bit_index(index):
     return 7 - index
+
+
+## ------------------------------------------------------------------------
+## CORE - STR
+
+### Returns ne version of `word` that fits in `length` digits
+def truncate_align_word(word, length, align='left'):
+    if align == 'right':
+        op = '>'
+    elif align == 'center':
+        op = '^'
+    else:
+        op = '<'
+        # align
+    word = ('{:' + op + str(length) + '}').format(word)
+    # truncate
+    word = word[0:length]
+    return word
 
 
 ## ------------------------------------------------------------------------
@@ -213,8 +231,8 @@ def hpdl_blank_char(pin, shifter, digit):
     hpdl_write_char(pin, shifter, digit, " ")
 
 ### Write 4 char `word` to HPDL w/ WRT `pin`, via `shifter`
-def hpdl_write_word(pin, shifter, word):
-    word = word.ljust(4)[0:4]
+def hpdl_write_word(pin, shifter, word, align='left'):
+    word = truncate_align_word(word, 4, align)
     for i, char in enumerate(word):
         hpdl_write_char(pin, shifter, i, char)
 
@@ -225,13 +243,58 @@ def hpdl_blank(pin, shifter):
 ## ------------------------------------------------------------------------
 ## MULTI HPDL-1414 - FNS
 
-def multi_hpdl_write_word(pins, shifter, word):
+def multi_hpdl_write_word(pins, shifter, word, align='left'):
     nb_chars = len(pins) * 4
-    word = word.ljust(nb_chars)[0:nb_chars]
-
+    word = truncate_align_word(word, nb_chars, align)
     for i, pin in enumerate(pins[::-1]):
         char_shift = i*4
         hpdl_write_word(pin, shifter, word[0+char_shift:4+char_shift])
+
+
+## ------------------------------------------------------------------------
+## HPDL-1414 - DEBUG FNS
+
+def hpdl_loop_charset(pin, shifter, digit, pause=0.2, infinite=True):
+    chars = list(HPDL_CHARS.keys())
+    c_i = 0
+    running = True
+    while running == True:
+        try:
+            hpdl_write_char(pin, shifter, digit, chars[c_i])
+            sleep(pause)
+            c_i = (c_i + 1) % len(chars)
+            if not infinite and c_i == 0:
+                running=False
+        except KeyboardInterrupt:
+            running=False
+
+def hpdl_loop_words(pin, shifter, words, pause=0.2, infinite=True, align='left'):
+    w_i = 0
+    running = True
+    while running == True:
+        try:
+            word = words[w_i]
+            hpdl_write_word(pin, shifter, word, align=align)
+            sleep(pause)
+            w_i = (w_i + 1) % len(words)
+            if not infinite and w_i == 0:
+                running=False
+        except KeyboardInterrupt:
+            running=False
+
+def multi_hpdl_loop_words(pins, shifter, words, pause=0.2, infinite=True, align='left'):
+    w_i = 0
+    running = True
+    while running == True:
+        try:
+            word = words[w_i]
+            multi_hpdl_write_word(pins, shifter, word, align=align)
+            sleep(pause)
+            w_i = (w_i + 1) % len(words)
+            if not infinite and w_i == 0:
+                running=False
+        except KeyboardInterrupt:
+            running=False
 
 
 ## ------------------------------------------------------------------------
@@ -259,31 +322,16 @@ def main():
     hpdl_blank(wrt1414_2, shifter)
 
     # words = ["", "ceci", "est", "un", "test"]
-    # w_i = 0
-    # while(1):
-    #     try:
-    #         word = words[w_i]
-    #         hpdl_write_word(wrt1414_1, shifter, word)
-    #         sleep(pause)
-    #         w_i = (w_i + 1) % len(words)
-    #     except KeyboardInterrupt:
-    #         exit()
+    # hpdl_loop_words(wrt1414_1, shifter, words, infinite=False)
+
+    words = ["tulipe", "patate", "canard", "tomate"]
+    multi_hpdl_loop_words([wrt1414_1, wrt1414_2], shifter, words, infinite=False, align='center')
+
+    # hpdl_loop_charset(wrt1414_1, shifter, 0, infinite=False)
 
     multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, "eignbahn")
 
     running = False
-
-
-    c_i = 0
-    chars = list(HPDL_CHARS.keys())
-    while running==True:
-        try:
-            hpdl_write_char(wrt1414_1, shifter, 2, chars[c_i])
-            sleep(pause)
-            c_i = (c_i + 1) % len(chars)
-
-        except KeyboardInterrupt:
-            running=False
 
 
 if __name__=="__main__":
