@@ -21,10 +21,6 @@ def is_bit_on(v, index):
     mask = 0b1 << index
     return (mask & v) > 0
 
-### NB: on my specific variant of the 74HC595, Q pin indexes are all reversed...
-def normalize_bit_index(index):
-    return 7 - index
-
 
 ## ------------------------------------------------------------------------
 ## CORE - STR
@@ -79,7 +75,7 @@ class Shifter():
 
     def setByte(self, b):
         for r in range(8):
-            r = normalize_bit_index(r) ## software fix for some variants of the shift register
+            r = 7 - index # we need to push from MSB to LSB
             if (is_bit_on(b, r)):
                 gpio.output(Shifter.inputB, gpio.HIGH)
             else:
