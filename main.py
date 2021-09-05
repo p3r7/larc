@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import RPi.GPIO as gpio
+from collections import OrderedDict
 from time import sleep
 
 gpio.setwarnings(False)
@@ -27,7 +28,87 @@ def normalize_bit_index(index):
 
 ## ------------------------------------------------------------------------
 
-HPDL_CHARS = {
+# HPDL-1414 WRT pins
+wrt1414_1 = 15
+wrt1414_2 = 16
+
+
+## ------------------------------------------------------------------------
+## 74HC595
+
+class Shifter():
+
+    # 14 - DS / SER    - serial data input          -  data pin
+    inputB=11
+    # 11 - SH_CP / SCK - shift register clock pin   -  clock pin
+    clock=12
+    # 12 - ST_CP / RCK - storage register clock pin -  latch pin
+    latch=13
+
+    # NB:
+    # 13 - OE / G      (output enabled)  -> on GND to enable
+    # 10 - MR / SCL    (master reclear)  -> on 5V to disable
+
+    def __init__(self):
+        self.setupBoard()
+        self.pause=0
+    def tick(self):
+        gpio.output(Shifter.clock, gpio.HIGH)
+        sleep(self.pause)
+        gpio.output(Shifter.clock, gpio.LOW)
+        sleep(self.pause)
+
+
+    def setByte(self, b):
+        for r in range(8):
+            r = normalize_bit_index(r) ## software fix for some variants of the shift register
+            if (is_bit_on(b, r)):
+                gpio.output(Shifter.inputB, gpio.HIGH)
+            else:
+                gpio.output(Shifter.inputB,gpio.LOW)
+            Shifter.tick(self)
+
+    def setValue(self, byte_l):
+        gpio.output(Shifter.latch, gpio.LOW)
+        for b in byte_l:
+            Shifter.setByte(self, b)
+        gpio.output(Shifter.latch, gpio.HIGH)
+
+    def clear(self):
+        gpio.output(Shifter.latch, gpio.LOW)
+        Shifter.tick(self)
+        gpio.output(Shifter.latch, gpio.HIGH)
+
+    def setupBoard(self):
+        gpio.setup(Shifter.inputB, gpio.OUT)
+        gpio.output(Shifter.inputB, gpio.LOW)
+        gpio.setup(Shifter.clock, gpio.OUT)
+        gpio.output(Shifter.clock, gpio.LOW)
+        gpio.setup(Shifter.latch, gpio.OUT)
+        gpio.output(Shifter.latch, gpio.HIGH)
+
+
+## ------------------------------------------------------------------------
+## HPDL-1414 - TIMING DELAYS
+
+# write delay
+WRT1414_TWD = 20 // 1000000000
+# write time
+WRT1414_TW = 130 // 1000000000
+# address setup time (twd + td)
+WRT1414_TAS = 150 // 1000000000
+
+# address hold time
+WRT1414_TAH = 50 // 1000000000
+
+
+## ------------------------------------------------------------------------
+## HPDL-1414 - DICT
+
+CHAR_ROWS_PREFIXES = [0b010, 0b011, 0b100, 0b101]
+DIGIT_SEL_PREFIXES = [[0, 0], [0, 1], [1, 0], [1, 1]]
+
+HPDL_CHARS = OrderedDict({
     # row 1
     ' ': [0 , 0],
     '!': [0 , 1],
@@ -99,89 +180,62 @@ HPDL_CHARS = {
     ')': [3 , 13],
     '^': [3 , 14],
     '_': [3 , 15],
+})
 
-}
 
 ## ------------------------------------------------------------------------
+## HPDL-1414 - FNS
 
+### Make HPDL-1414 w/ WRT `pin` apply the value at its pins (An, Dn)
+def hpdl_write(pin):
+    gpio.output(pin, gpio.LOW)
+    sleep(WRT1414_TWD)
+    sleep(WRT1414_TW)
+    sleep(WRT1414_TAH)
+    gpio.output(pin, gpio.HIGH)
 
-wrt1414 = 15
-# write delay
-wrt1414_twd = 20 // 1000000000
-# write time
-wrt1414_tw = 130 // 1000000000
-# address setup time (twd + td)
-wrt1414_tas = 150 // 1000000000
-
-# address hold time
-wrt1414_tah = 50 // 1000000000
-
-
-class Shifter():
-
-    # 14 - DS / SER    - serial data input          -  data pin
-    inputB=11
-    # 11 - SH_CP / SCK - shift register clock pin   -  clock pin
-    clock=12
-    # 12 - ST_CP / RCK - storage register clock pin -  latch pin
-    latch=13
-
-    # NB:
-    # 13 - OE / G      (output enabled)  -> on GND to enable
-    # 10 - MR / SCL    (master reclear)  -> on 5V to disable
-
-    def __init__(self):
-        self.setupBoard()
-        self.pause=0
-    def tick(self):
-        gpio.output(Shifter.clock, gpio.HIGH)
-        sleep(self.pause)
-        gpio.output(Shifter.clock, gpio.LOW)
-        sleep(self.pause)
-
-
-    def setByte(self, b):
-        for r in range(8):
-            r = normalize_bit_index(r) ## software fix for some variants of the shift register
-            if (is_bit_on(b, r)):
-                gpio.output(Shifter.inputB, gpio.HIGH)
-            else:
-                gpio.output(Shifter.inputB,gpio.LOW)
-            Shifter.tick(self)
-
-    def setValue(self, byte_l):
-        gpio.output(Shifter.latch, gpio.LOW)
-        for b in byte_l:
-            Shifter.setByte(self, b)
-        gpio.output(Shifter.latch, gpio.HIGH)
-
-    def clear(self):
-        gpio.output(Shifter.latch, gpio.LOW)
-        Shifter.tick(self)
-        gpio.output(Shifter.latch, gpio.HIGH)
-
-    def setupBoard(self):
-        gpio.setup(Shifter.inputB, gpio.OUT)
-        gpio.output(Shifter.inputB, gpio.LOW)
-        gpio.setup(Shifter.clock, gpio.OUT)
-        gpio.output(Shifter.clock, gpio.LOW)
-        gpio.setup(Shifter.latch, gpio.OUT)
-        gpio.output(Shifter.latch, gpio.HIGH)
-
-
-def write_value(shifter, value):
-    shifter.clear()
-
-    gpio.output(wrt1414, gpio.LOW)
-    sleep(wrt1414_twd)
-
+### Write raw `value` to HPDL w/ WRT `pin`, via `shifter`
+### `value` is typically an array of 8-sized bitmaps
+def hpdl_write_value(pin, shifter, value):
+    # shifter.clear()
     shifter.setValue(value)
+    hpdl_write(pin)
 
-    # sleep(1)
-    sleep(wrt1414_tw)
+### Write `char` to `digit` of HPDL w/ WRT `pin`, via `shifter`
+def hpdl_write_char(pin, shifter, digit, char):
+    d = DIGIT_SEL_PREFIXES[::-1][digit]
+    c_pos = HPDL_CHARS[char]
+    c = (CHAR_ROWS_PREFIXES[c_pos[0]] << 4) + c_pos[1] + (d[1] << 7)
+    raw_v = [d[0], c]
+    hpdl_write_value(pin, shifter, raw_v)
 
-    sleep(wrt1414_tah)
-    gpio.output(wrt1414, gpio.HIGH)
+def hpdl_blank_char(pin, shifter, digit):
+    hpdl_write_char(pin, shifter, digit, " ")
+
+### Write 4 char `word` to HPDL w/ WRT `pin`, via `shifter`
+def hpdl_write_word(pin, shifter, word):
+    word = word.ljust(4)[0:4]
+    for i, char in enumerate(word):
+        hpdl_write_char(pin, shifter, i, char)
+
+def hpdl_blank(pin, shifter):
+    hpdl_write_word(pin, shifter, "")
+
+
+## ------------------------------------------------------------------------
+## MULTI HPDL-1414 - FNS
+
+def multi_hpdl_write_word(pins, shifter, word):
+    nb_chars = len(pins) * 4
+    word = word.ljust(nb_chars)[0:nb_chars]
+
+    for i, pin in enumerate(pins[::-1]):
+        char_shift = i*4
+        hpdl_write_word(pin, shifter, word[0+char_shift:4+char_shift])
+
+
+## ------------------------------------------------------------------------
+## MAIN
 
 def main():
     pause = 0.2
@@ -189,73 +243,44 @@ def main():
     shifter = Shifter()
     running = True
 
-    char_rows_prefixes = [0b010, 0b011, 0b100, 0b101]
     char_row_index = 0
-    digit_sel_prefixes = [[0, 0], [0, 1], [1, 0], [1, 1]]
     digit_index = 0
 
-    gpio.setup(wrt1414, gpio.OUT)
+    gpio.setup(wrt1414_1, gpio.OUT)
+    gpio.setup(wrt1414_2, gpio.OUT)
+    # disable write
+    gpio.output(wrt1414_1, gpio.HIGH)
+    gpio.output(wrt1414_2, gpio.HIGH)
 
     shifter.clear()
 
     # blank
-    c_pos = HPDL_CHARS[" "]
-    c = (char_rows_prefixes[c_pos[0]] << 4) + c_pos[1]
-    for d in digit_sel_prefixes:
-        shifter.setValue([d[0], c + (d[1] << 7)])
-        gpio.output(wrt1414, gpio.LOW)
-        sleep(wrt1414_twd)
-        sleep(wrt1414_tw)
-        sleep(wrt1414_tah)
-        gpio.output(wrt1414, gpio.HIGH)
-    sleep(0.1)
+    hpdl_blank(wrt1414_1, shifter)
+    hpdl_blank(wrt1414_2, shifter)
 
+    # words = ["", "ceci", "est", "un", "test"]
+    # w_i = 0
+    # while(1):
+    #     try:
+    #         word = words[w_i]
+    #         hpdl_write_word(wrt1414_1, shifter, word)
+    #         sleep(pause)
+    #         w_i = (w_i + 1) % len(words)
+    #     except KeyboardInterrupt:
+    #         exit()
 
-    words = ["    ", "let ", " me ", "show", "you ", "some", "dust"]
-    w_i = 0
-    while(1):
-        word = words[w_i]
-        for i, char in enumerate(word):
-            d = digit_sel_prefixes[::-1][i]
-            c_pos = HPDL_CHARS[char]
-            c = (char_rows_prefixes[c_pos[0]] << 4) + c_pos[1] + (d[1] << 7)
-            shifter.setValue([d[0], c])
-
-            gpio.output(wrt1414, gpio.LOW)
-            sleep(wrt1414_twd)
-            sleep(wrt1414_tw)
-            sleep(wrt1414_tah)
-            gpio.output(wrt1414, gpio.HIGH)
-
-        sleep(0.5)
-        w_i = (w_i + 1) % len(words)
-
+    multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, "eignbahn")
 
     running = False
 
 
-    char_col = 0b0000
+    c_i = 0
+    chars = list(HPDL_CHARS.keys())
     while running==True:
         try:
-
-            d = digit_sel_prefixes[digit_index]
-            v = (char_rows_prefixes[char_row_index] << 4) + char_col + (d[1] << 7)
-
-            print(binp(v + (d[0] << 8)) + ' | ' + hex(v) + ' | ' + str(v))
-            shifter.setValue([d[0], c])
-
-            gpio.output(wrt1414, gpio.LOW)
-            sleep(wrt1414_twd)
-            sleep(wrt1414_tw)
-            sleep(wrt1414_tah)
-            gpio.output(wrt1414, gpio.HIGH)
-
+            hpdl_write_char(wrt1414_1, shifter, 2, chars[c_i])
             sleep(pause)
-
-            char_col += 1
-            if char_col > 0b1111:
-                char_col = 0b0000
-                char_row_index = (char_row_index + 1) % 4
+            c_i = (c_i + 1) % len(chars)
 
         except KeyboardInterrupt:
             running=False
