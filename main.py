@@ -211,7 +211,7 @@ def main():
     sleep(0.1)
 
 
-    words = ["   ", "let ", " me ", "show", "you ", "some", "dust"]
+    words = ["    ", "let ", " me ", "show", "you ", "some", "dust"]
     w_i = 0
     while(1):
         word = words[w_i]
