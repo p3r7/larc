@@ -2,7 +2,9 @@
 
 WIP programmable hw midi controller
 
-currently only controlling a single HDPL-1414 w/ 2 74HC595 daisy chained (using 9 pins in total)
+currently only controlling a few HDPL-1414:
+ - raspi controlling w/ 3 IO pins 2 74HC595 daisy chained (outputs 9 pins for A0-1 + D0-6)
+ - raspi controlling each HPDL-1414 WRT pin with a dedicated IO
 
 this approach seems more viable: https://github.com/RoelandR/HPDL-1414-board
 
