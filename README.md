@@ -11,6 +11,8 @@ this approach seems more viable: https://github.com/RoelandR/HPDL-1414-board
 
 ## References
 
+[Raspberry Pi GPIO pinouts](https://pinout.xyz/pinout/wiringpi#)
+
 [HPDL-1414 datasheet](http://www.farnell.com/datasheets/76528.pdf)
 [HPDL-1414 arduino library](https://github.com/marecl/HPDL1414/blob/master/src/HPDL1414.cpp)
 
