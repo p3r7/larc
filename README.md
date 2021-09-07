@@ -6,7 +6,7 @@ currently only controlling a few **HDPL-1414** 14 segment displays:
  - **raspi** controlling w/ 3 IO pins 2 **74HC595** daisy chained (outputs 9 pins for A0-1 + D0-6)
  - **raspi** controlling each **HPDL-1414** WRT pin with a dedicated IO
 
-alternatively, could use a MCP23017 (i2c) or MCP23S17 (SPI) ([datasheet](https://ww1.microchip.com/downloads/en/devicedoc/20001952c.pdf)) like [this project](https://github.com/RoelandR/HPDL-1414-board) for a (slightly** smaller form factor & fewer raspi pins used.
+alternatively, could use a MCP23017 (i2c) or MCP23S17 (SPI) ([datasheet](https://ww1.microchip.com/downloads/en/devicedoc/20001952c.pdf)) like [this project](https://github.com/RoelandR/HPDL-1414-board) for a (slightly smaller form factor & fewer raspi pins used.
 
 
 ## References
