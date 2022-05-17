@@ -4,7 +4,17 @@ import RPi.GPIO as gpio
 from collections import OrderedDict
 from time import sleep
 
+
+## ------------------------------------------------------------------------
+# RASPI GPIO
+
 gpio.setwarnings(False)
+
+kbd_swtch = 10
+
+# HPDL-1414 WRT pins
+wrt1414_1 = 15
+wrt1414_2 = 16
 
 
 ## ------------------------------------------------------------------------
@@ -38,15 +48,6 @@ def truncate_align_word(word, length, align='left'):
     # truncate
     word = word[0:length]
     return word
-
-
-## ------------------------------------------------------------------------
-
-kbd_swtch = 10
-
-# HPDL-1414 WRT pins
-wrt1414_1 = 15
-wrt1414_2 = 16
 
 
 ## ------------------------------------------------------------------------
