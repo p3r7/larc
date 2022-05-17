@@ -9,6 +9,13 @@ currently only controlling a few **HDPL-1414** 14 segment displays:
 alternatively, could use a MCP23017 (i2c) or MCP23S17 (SPI) ([datasheet](https://ww1.microchip.com/downloads/en/devicedoc/20001952c.pdf)) like [this project](https://github.com/RoelandR/HPDL-1414-board) for a (slightly smaller form factor & fewer raspi pins used.
 
 
+## Deps
+
+Using [spidev](https://github.com/doceme/py-spidev), installed through apt (`python3-spidev`).
+
+Also tried [Adafruit's legacy MCP3008 lib](https://github.com/adafruit/Adafruit_Python_MCP3008.git) but had trouble getting it to work.
+
+
 ## References
 
 **Raspberry Pi**:
