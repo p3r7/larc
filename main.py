@@ -6,6 +6,32 @@ from time import sleep
 
 
 ## ------------------------------------------------------------------------
+## MCP3008 (ADC)
+
+from spidev import SpiDev
+
+
+class MCP3008:
+    def __init__(self, bus = 0, device = 0):
+        self.bus, self.device = bus, device
+        self.spi = SpiDev()
+        self.open()
+        self.spi.max_speed_hz = 1000000 # 1MHz
+
+    def open(self):
+        self.spi.open(self.bus, self.device)
+        self.spi.max_speed_hz = 1000000 # 1MHz
+
+    def read(self, channel = 0):
+        adc = self.spi.xfer2([1, (8 + channel) << 4, 0])
+        data = ((adc[1] & 3) << 8) + adc[2]
+        return data
+
+    def close(self):
+        self.spi.close()
+
+
+## ------------------------------------------------------------------------
 # RASPI GPIO
 
 gpio.setwarnings(False)
@@ -15,6 +41,17 @@ kbd_swtch = 10
 # HPDL-1414 WRT pins
 wrt1414_1 = 15
 wrt1414_2 = 16
+
+# MCP3008 (ADC) pins, using HW SPI0
+# raspi 19 (MOSI) -> DIN
+# raspi 21 (MISO) -> DOUT
+# raspi 21 (SCLK) -> CLK
+# raspi 21 (CE0)  -> CS/SHDN
+
+MCP3008_SPI_BUS   = 0
+MCP3008_SPI_DEVICE = 0
+
+adc = MCP3008(bus=MCP3008_SPI_BUS, device=MCP3008_SPI_DEVICE)
 
 
 ## ------------------------------------------------------------------------
@@ -330,13 +367,27 @@ def main():
     # words = ["", "ceci", "est", "un", "test"]
     # hpdl_loop_words(wrt1414_1, shifter, words, infinite=False)
 
-    words = ["tulipe", "patate", "canard", "tomate", "limace", "violon", "carotte", "lasagne", "salade"]
-    multi_hpdl_loop_words([wrt1414_1, wrt1414_2], shifter, words, infinite=True, align='center',
-                          predicate=kbd_swtch_pressed)
+    # words = ["tulipe", "patate", "canard", "tomate", "limace", "violon", "carotte", "lasagne", "salade"]
+    # multi_hpdl_loop_words([wrt1414_1, wrt1414_2], shifter, words, infinite=True, align='center',
+    #                       predicate=kbd_swtch_pressed)
 
     # hpdl_loop_charset(wrt1414_1, shifter, 0, infinite=False)
 
-    multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, "eignbahn")
+    # multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, "eignbahn")
+    # multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, "nornzine")
+
+    words = []
+    with open(os.path.abspath(os.path.dirname(__file__)) + '/words.txt') as f:
+        for w in f:
+            words.append(w.strip().lower())
+
+    while True:
+        # v = math.log(adc.read(0) + 0.01)
+        v1 = adc.read(0)
+        if v1 >= 1000:
+            v1 = 999
+        multi_hpdl_write_word([wrt1414_1, wrt1414_2], shifter, words[v1])
+        sleep(0.1)
 
     running = False
 
