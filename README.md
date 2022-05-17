@@ -8,7 +8,7 @@ currently only controlling a few **HDPL-1414** 14 segment displays:
  - **MCP3008** ADC for allowing raspi to read value of ALPS analog faders
  - Cherry MX keyswitches
 
-alternatively, could use a MCP23017 (i2c) or MCP23S17 (SPI) ([datasheet](https://ww1.microchip.com/downloads/en/devicedoc/20001952c.pdf)) like [this project](https://github.com/RoelandR/HPDL-1414-board) for a (slightly smaller form factor & fewer raspi pins used.
+for driving the segment displays, could alternatively use a MCP23017 (i2c) or MCP23S17 (SPI) ([datasheet](https://ww1.microchip.com/downloads/en/devicedoc/20001952c.pdf)) like [this project](https://github.com/RoelandR/HPDL-1414-board) to save a few raspi pins (but w/ bigger form factor & less control over latch sync).
 
 
 ## Deps
