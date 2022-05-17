@@ -31,3 +31,5 @@ Also tried [Adafruit's legacy MCP3008 lib](https://github.com/adafruit/Adafruit_
  - [datasheet](https://www.ti.com/lit/ds/symlink/sn74hc595.pdf)
  - [official arduino tutorial](https://www.arduino.cc/en/Tutorial/Foundations/ShiftOut)
  - [arduino tutorial on lastminuteengineers.com](https://lastminuteengineers.com/74hc595-shift-register-arduino-tutorial/)
+
+for targeting Lexicon MPX1, see [this repo](https://github.com/p3r7/lexicon-mpx1-sysex-tests/blob/main/larc.py).
