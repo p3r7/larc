@@ -42,6 +42,8 @@ def truncate_align_word(word, length, align='left'):
 
 ## ------------------------------------------------------------------------
 
+kbd_swtch = 10
+
 # HPDL-1414 WRT pins
 wrt1414_1 = 15
 wrt1414_2 = 16
@@ -278,14 +280,17 @@ def hpdl_loop_words(pin, shifter, words, pause=0.2, infinite=True, align='left')
         except KeyboardInterrupt:
             running=False
 
-def multi_hpdl_loop_words(pins, shifter, words, pause=0.2, infinite=True, align='left'):
+def multi_hpdl_loop_words(pins, shifter, words, pause=0.2, infinite=True, align='left', predicate=None):
     w_i = 0
     running = True
     while running == True:
         try:
             word = words[w_i]
             multi_hpdl_write_word(pins, shifter, word, align=align)
-            sleep(pause)
+            if predicate != None and not predicate():
+                continue
+            else:
+                sleep(pause)
             w_i = (w_i + 1) % len(words)
             if not infinite and w_i == 0:
                 running=False
@@ -305,6 +310,10 @@ def main():
     char_row_index = 0
     digit_index = 0
 
+    gpio.setup(kbd_swtch, gpio.IN, pull_up_down=gpio.PUD_DOWN)
+    def kbd_swtch_pressed():
+        return gpio.input(kbd_swtch) == gpio.HIGH
+
     gpio.setup(wrt1414_1, gpio.OUT)
     gpio.setup(wrt1414_2, gpio.OUT)
     # disable write
@@ -320,8 +329,9 @@ def main():
     # words = ["", "ceci", "est", "un", "test"]
     # hpdl_loop_words(wrt1414_1, shifter, words, infinite=False)
 
-    words = ["tulipe", "patate", "canard", "tomate"]
-    multi_hpdl_loop_words([wrt1414_1, wrt1414_2], shifter, words, infinite=False, align='center')
+    words = ["tulipe", "patate", "canard", "tomate", "limace", "violon", "carotte", "lasagne", "salade"]
+    multi_hpdl_loop_words([wrt1414_1, wrt1414_2], shifter, words, infinite=True, align='center',
+                          predicate=kbd_swtch_pressed)
 
     # hpdl_loop_charset(wrt1414_1, shifter, 0, infinite=False)
 
