@@ -75,7 +75,7 @@ class Shifter():
 
     def setByte(self, b):
         for r in range(8):
-            r = 7 - index # we need to push from MSB to LSB
+            r = 7 - r # we need to push from MSB to LSB
             if (is_bit_on(b, r)):
                 gpio.output(Shifter.inputB, gpio.HIGH)
             else:
