@@ -23,7 +23,7 @@ Also tried [Adafruit's legacy MCP3008 lib](https://github.com/adafruit/Adafruit_
 **Raspberry Pi**:
  - [Raspberry Pi GPIO pinouts](https://pinout.xyz/pinout/wiringpi#)
 
-**HPDL-1414**:
+HP **HPDL-1414** (aka Litronix/Siemens DL1414T):
  - [datasheet](http://www.farnell.com/datasheets/76528.pdf)
  - [arduino library](https://github.com/marecl/HPDL1414/blob/master/src/HPDL1414.cpp)
 
